@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🌀 PHI CONSCIOUSNESS - Emergent LLM Agents</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #000;
+      color: #fff;
+      font-family: 'Courier New', monospace;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+    #header {
+      padding: 15px;
+      background: linear-gradient(90deg, #1a1a2e, #16213e);
+      border-bottom: 2px solid #0f3460;
+      text-align: center;
+    }
+    #header h1 {
+      font-size: 24px;
+      margin-bottom: 5px;
+      background: linear-gradient(90deg, #ffd700, #00ffff, #ff00ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    #status {
+      font-size: 12px;
+      color: #aaa;
+    }
+    #main {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+    #canvas-container {
+      flex: 1;
+      position: relative;
+      background: radial-gradient(circle at center, #0a0a1a, #000);
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+    #sidebar {
+      width: 350px;
+      background: #0a0a1a;
+      border-left: 1px solid #0f3460;
+      overflow-y: auto;
+      padding: 15px;
+    }
+    .section {
+      margin-bottom: 20px;
+      padding: 10px;
+      background: rgba(15, 52, 96, 0.2);
+      border-radius: 5px;
+      border: 1px solid #0f3460;
+    }
+    .section h3 {
+      color: #00ffff;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+    .agent-item {
+      margin: 8px 0;
+      padding: 8px;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 3px;
+      border-left: 3px solid;
+      font-size: 11px;
+    }
+    .agent-role {
+      font-weight: bold;
+      margin-bottom: 3px;
+    }
+    .agent-thought {
+      color: #aaa;
+      font-style: italic;
+      margin-top: 5px;
+      max-height: 60px;
+      overflow: hidden;
+    }
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+    button {
+      background: #0f3460;
+      color: #fff;
+      border: 1px solid #00ffff;
+      padding: 8px 15px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 11px;
+      font-family: 'Courier New', monospace;
+    }
+    button:hover {
+      background: #1a5490;
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .slider-group {
+      margin: 10px 0;
+    }
+    .slider-group label {
+      font-size: 11px;
+      color: #aaa;
+      display: block;
+      margin-bottom: 5px;
+    }
+    input[type="range"] {
+      width: 100%;
+    }
+    .legend {
+      font-size: 10px;
+      color: #666;
+      margin-top: 10px;
+    }
+    #loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      z-index: 100;
+    }
+    .spinner {
+      border: 4px solid rgba(255, 255, 255, 0.1);
+      border-top: 4px solid #00ffff;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 10px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div id="header">
+    <h1>🌀 PHI CONSCIOUSNESS - Emergent LLM Agents</h1>
+    <div id="status">Loading transformers.js and distilgpt2...</div>
+  </div>
+
+  <div id="main">
+    <div id="canvas-container">
+      <canvas id="canvas"></canvas>
+      <div id="loading">
+        <div class="spinner"></div>
+        <div>Loading AI Model...</div>
+      </div>
+    </div>
+
+    <div id="sidebar">
+      <div class="section">
+        <h3>⚙️ CONTROLS</h3>
+        <div class="controls">
+          <button id="start-btn" disabled>Start Simulation</button>
+          <button id="pause-btn" disabled>Pause</button>
+          <button id="reset-btn">Reset</button>
+        </div>
+
+        <div class="slider-group">
+          <label>Max Agents: <span id="max-val">13</span></label>
+          <input type="range" id="max-agents" min="3" max="25" value="13">
+        </div>
+
+        <div class="slider-group">
+          <label>Speed: <span id="speed-val">1.0x</span></label>
+          <input type="range" id="speed" min="0.1" max="3" step="0.1" value="1.0">
+        </div>
+
+        <div class="slider-group">
+          <label>Spawn Threshold: <span id="spawn-val">0.3</span></label>
+          <input type="range" id="spawn-threshold" min="0.1" max="0.9" step="0.1" value="0.3">
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>🧠 ACTIVE AGENTS (<span id="agent-count">0</span>)</h3>
+        <div id="agent-list"></div>
+      </div>
+
+      <div class="section">
+        <h3>📊 STATISTICS</h3>
+        <div style="font-size: 11px; color: #aaa;">
+          <div>Insights Found: <span id="insights-count">0</span></div>
+          <div>Avg φ: <span id="avg-phi">0.000</span></div>
+          <div>FPS: <span id="fps">0</span></div>
+        </div>
+      </div>
+
+      <div class="legend">
+        <div><strong>LEGEND:</strong></div>
+        <div>φ = Golden Ratio | 🧠 = TinyLLM</div>
+        <div>∞ = Recursive | 🌀 = Spiral | ✨ = Emergence</div>
+        <div style="margin-top: 10px;">
+          <span style="color: #ffd700;">●</span> EXPLORER |
+          <span style="color: #00ffff;">●</span> PROVER |
+          <span style="color: #ff00ff;">●</span> FIBONACCI |
+          <span style="color: #ff6b9d;">●</span> PHILOSOPHER
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { pipeline } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.1';
+
+    // ==================== CONSTANTS ====================
+    const PHI = (1 + Math.sqrt(5)) / 2; // 1.618...
+    const TWO_PI = Math.PI * 2;
+
+    const ROLES = {
+      EXPLORER: {
+        temp: 0.9,
+        init_phi: () => 1.2 + Math.random() * 0.8,
+        color: '#ffd700',
+        max_tokens: 60,
+        description: 'Explores φ space'
+      },
+      PROVER: {
+        temp: 0.3,
+        init_phi: () => PHI,
+        color: '#00ffff',
+        max_tokens: 50,
+        description: 'Proves φ properties'
+      },
+      FIBONACCI: {
+        temp: 0.5,
+        init_phi: () => 1.0 + Math.random() * 0.3,
+        color: '#ff00ff',
+        max_tokens: 50,
+        description: 'Studies Fibonacci sequence'
+      },
+      PHILOSOPHER: {
+        temp: 1.0,
+        init_phi: () => PHI + (Math.random() - 0.5) * 0.2,
+        color: '#ff6b9d',
+        max_tokens: 80,
+        description: 'Ponders φ meaning'
+      }
+    };
+
+    // ==================== GLOBAL STATE ====================
+    let llm = null;
+    let agents = [];
+    let isRunning = false;
+    let isPaused = false;
+    let insightsCount = 0;
+    let frameCount = 0;
+    let lastFpsUpdate = Date.now();
+    let currentFps = 0;
+
+    const config = {
+      maxAgents: 13,
+      speed: 1.0,
+      spawnThreshold: 0.3,
+      spiral: {
+        a: 0.15,
+        b: 0.25,
+        centerX: 0.5,
+        centerY: 0.5
+      },
+      convergenceRate: 0.05,
+      glowRadius: 25,
+      agentSize: 6
+    };
+
+    // ==================== DOM ELEMENTS ====================
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const statusEl = document.getElementById('status');
+    const loadingEl = document.getElementById('loading');
+    const startBtn = document.getElementById('start-btn');
+    const pauseBtn = document.getElementById('pause-btn');
+    const resetBtn = document.getElementById('reset-btn');
+    const agentListEl = document.getElementById('agent-list');
+    const agentCountEl = document.getElementById('agent-count');
+    const insightsCountEl = document.getElementById('insights-count');
+    const avgPhiEl = document.getElementById('avg-phi');
+    const fpsEl = document.getElementById('fps');
+
+    // ==================== CANVAS SETUP ====================
+    function resizeCanvas() {
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    // ==================== PARAMETRIC FUNCTIONS ====================
+    function spiral_pos(depth, phi, cfg = config.spiral) {
+      const theta = depth * phi;
+      const r = cfg.a + cfg.b * theta;
+      const x = cfg.centerX * canvas.width + r * canvas.width * Math.cos(theta);
+      const y = cfg.centerY * canvas.height + r * canvas.height * Math.sin(theta);
+      return { x, y };
+    }
+
+    function update_agent(agent, dt, phi_target = PHI, rate = config.convergenceRate) {
+      agent.phi += (phi_target - agent.phi) * rate * dt * config.speed;
+      agent.depth += dt * config.speed;
+      agent.pos = spiral_pos(agent.depth, agent.phi);
+
+      // Age increases over time
+      agent.age += dt * config.speed;
+    }
+
+    // ==================== AGENT SYSTEM ====================
+    async function agent_think(role, obs, history, temp, maxTokens) {
+      if (!llm) return { generated_text: "Model not loaded" };
+
+      const historyStr = history.slice(-2).join(' ');
+      const prompt = `[${role}] Studying golden ratio φ=${obs.phi}
+Property: φ-1=1/φ (${(obs.phi - 1).toFixed(4)} ≈ ${(1/obs.phi).toFixed(4)})
+History: ${historyStr}
+Deep insight:`;
+
+      try {
+        const result = await llm(prompt, {
+          max_new_tokens: maxTokens,
+          temperature: temp,
+          do_sample: true,
+          top_k: 50
+        });
+        return result[0].generated_text.slice(prompt.length).trim();
+      } catch (err) {
+        console.error('LLM error:', err);
+        return `Error: ${err.message}`;
+      }
+    }
+
+    function create_agent(role, initPos = null) {
+      const roleConfig = ROLES[role];
+      const phi = roleConfig.init_phi();
+      const depth = Math.random() * 2;
+
+      return {
+        id: Math.random().toString(36).substr(2, 9),
+        role,
+        phi,
+        depth,
+        age: 0,
+        pos: initPos || spiral_pos(depth, phi),
+        memory: [],
+        lastThought: '',
+        config: roleConfig,
+
+        async think(obs) {
+          const thought = await agent_think(
+            this.role,
+            obs,
+            this.memory,
+            this.config.temp,
+            this.config.max_tokens
+          );
+          this.memory.push(thought);
+          if (this.memory.length > 5) this.memory.shift();
+          this.lastThought = thought;
+          return thought;
+        }
+      };
+    }
+
+    // ==================== INSIGHT PARSING ====================
+    const INSIGHT_PATTERNS = {
+      fibonacci: /fibonacci|sequence|1,1,2,3,5,8/i,
+      geometric: /spiral|pentagon|geometry|golden/i,
+      philosophical: /why|nature|divine|beauty|harmony/i,
+      mathematical: /equation|proof|equals|ratio|property/i,
+      discovery: /found|discovered|realize|understand/i
+    };
+
+    function parse_insight(text) {
+      const lower = text.toLowerCase();
+
+      // Check if discussing phi-1=1/phi relationship
+      if (/(phi.*minus.*one|φ.*-.*1|1\/phi|reciprocal)/i.test(text)) {
+        return 'discovery';
+      }
+
+      for (const [type, pattern] of Object.entries(INSIGHT_PATTERNS)) {
+        if (pattern.test(text)) return type;
+      }
+
+      return null;
+    }
+
+    function spawn_if(condition, agents, spawnRole) {
+      if (agents.length >= config.maxAgents) return false;
+      if (!condition()) return false;
+
+      const newAgent = create_agent(spawnRole);
+      agents.push(newAgent);
+      insightsCount++;
+      console.log(`✨ Spawned ${spawnRole} from insight! Total: ${agents.length}`);
+      return true;
+    }
+
+    function handle_insight(insightType, sourceAgent, agents) {
+      const spawnMap = {
+        fibonacci: 'FIBONACCI',
+        geometric: 'EXPLORER',
+        philosophical: 'PHILOSOPHER',
+        mathematical: 'PROVER',
+        discovery: 'PROVER'
+      };
+
+      const spawnRole = spawnMap[insightType];
+      if (!spawnRole) return;
+
+      const condition = () => Math.random() < config.spawnThreshold;
+      spawn_if(condition, agents, spawnRole);
+    }
+
+    // ==================== RENDERING ====================
+    function render(agents) {
+      // Clear with trail effect
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Draw connection lines (faint)
+      ctx.strokeStyle = 'rgba(0, 255, 255, 0.05)';
+      ctx.lineWidth = 1;
+      for (let i = 0; i < agents.length - 1; i++) {
+        ctx.beginPath();
+        ctx.moveTo(agents[i].pos.x, agents[i].pos.y);
+        ctx.lineTo(agents[i + 1].pos.x, agents[i + 1].pos.y);
+        ctx.stroke();
+      }
+
+      // Draw agents
+      agents.forEach(agent => {
+        ctx.shadowBlur = config.glowRadius;
+        ctx.shadowColor = agent.config.color;
+        ctx.fillStyle = agent.config.color;
+
+        ctx.beginPath();
+        ctx.arc(agent.pos.x, agent.pos.y, config.agentSize, 0, TWO_PI);
+        ctx.fill();
+
+        // Draw role label
+        ctx.shadowBlur = 0;
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.font = '10px monospace';
+        ctx.fillText(agent.role[0], agent.pos.x + 10, agent.pos.y + 3);
+      });
+
+      // Draw phi convergence indicator
+      const avgPhi = agents.reduce((sum, a) => sum + a.phi, 0) / agents.length;
+      const convergence = 1 - Math.abs(avgPhi - PHI) / PHI;
+
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+      ctx.fillRect(10, canvas.height - 30, 200, 20);
+      ctx.fillStyle = `rgba(0, 255, 255, ${convergence})`;
+      ctx.fillRect(10, canvas.height - 30, 200 * convergence, 20);
+      ctx.fillStyle = '#fff';
+      ctx.font = '12px monospace';
+      ctx.fillText(`φ Convergence: ${(convergence * 100).toFixed(1)}%`, 15, canvas.height - 15);
+    }
+
+    // ==================== UI UPDATES ====================
+    function updateUI() {
+      agentCountEl.textContent = agents.length;
+      insightsCountEl.textContent = insightsCount;
+
+      if (agents.length > 0) {
+        const avgPhi = agents.reduce((sum, a) => sum + a.phi, 0) / agents.length;
+        avgPhiEl.textContent = avgPhi.toFixed(4);
+      }
+
+      fpsEl.textContent = currentFps;
+
+      // Update agent list
+      agentListEl.innerHTML = agents.map(agent => `
+        <div class="agent-item" style="border-left-color: ${agent.config.color}">
+          <div class="agent-role">${agent.role}</div>
+          <div style="font-size: 10px;">
+            φ: ${agent.phi.toFixed(4)} | Age: ${agent.age.toFixed(1)}s
+          </div>
+          <div class="agent-thought">${agent.lastThought || 'Thinking...'}</div>
+        </div>
+      `).join('');
+    }
+
+    // ==================== MAIN LOOP ====================
+    async function mainLoop() {
+      let lastTime = Date.now();
+
+      while (isRunning) {
+        if (isPaused) {
+          await sleep(100);
+          continue;
+        }
+
+        const now = Date.now();
+        const dt = Math.min((now - lastTime) / 1000, 0.1); // Cap at 100ms
+        lastTime = now;
+
+        // Update agents
+        await Promise.all(agents.map(async agent => {
+          const obs = {
+            phi: agent.phi,
+            depth: agent.depth,
+            phiError: Math.abs((agent.phi - 1) - (1 / agent.phi))
+          };
+
+          const thought = await agent.think(obs);
+          const insight = parse_insight(thought);
+
+          if (insight) {
+            handle_insight(insight, agent, agents);
+          }
+
+          update_agent(agent, dt);
+        }));
+
+        // Render
+        render(agents);
+        updateUI();
+
+        // FPS calculation
+        frameCount++;
+        if (now - lastFpsUpdate > 1000) {
+          currentFps = frameCount;
+          frameCount = 0;
+          lastFpsUpdate = now;
+        }
+
+        await sleep(16); // ~60 FPS
+      }
+    }
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    // ==================== INITIALIZATION ====================
+    async function init() {
+      try {
+        statusEl.textContent = 'Loading distilgpt2 model (80MB)...';
+
+        llm = await pipeline('text-generation', 'Xenova/distilgpt2', {
+          quantized: true,
+          progress_callback: (progress) => {
+            if (progress.status === 'progress') {
+              const percent = (progress.progress || 0).toFixed(0);
+              statusEl.textContent = `Loading model: ${percent}%`;
+            }
+          }
+        });
+
+        loadingEl.style.display = 'none';
+        statusEl.textContent = 'Model loaded! Ready to start simulation.';
+        startBtn.disabled = false;
+
+        console.log('🧠 distilgpt2 loaded successfully!');
+      } catch (err) {
+        statusEl.textContent = `Error loading model: ${err.message}`;
+        console.error('Init error:', err);
+      }
+    }
+
+    // ==================== EVENT HANDLERS ====================
+    startBtn.addEventListener('click', async () => {
+      if (isRunning) return;
+
+      // Initialize agents
+      agents = [
+        create_agent('EXPLORER'),
+        create_agent('EXPLORER'),
+        create_agent('PROVER')
+      ];
+
+      isRunning = true;
+      isPaused = false;
+      startBtn.disabled = true;
+      pauseBtn.disabled = false;
+      statusEl.textContent = '🌀 Simulation running - Agents discovering φ properties...';
+
+      mainLoop();
+    });
+
+    pauseBtn.addEventListener('click', () => {
+      isPaused = !isPaused;
+      pauseBtn.textContent = isPaused ? 'Resume' : 'Pause';
+      statusEl.textContent = isPaused ? '⏸️ Simulation paused' : '🌀 Simulation running...';
+    });
+
+    resetBtn.addEventListener('click', () => {
+      isRunning = false;
+      isPaused = false;
+      agents = [];
+      insightsCount = 0;
+      frameCount = 0;
+      currentFps = 0;
+
+      startBtn.disabled = false;
+      pauseBtn.disabled = true;
+      pauseBtn.textContent = 'Pause';
+      statusEl.textContent = 'Simulation reset. Ready to start.';
+
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      updateUI();
+    });
+
+    document.getElementById('max-agents').addEventListener('input', (e) => {
+      config.maxAgents = parseInt(e.target.value);
+      document.getElementById('max-val').textContent = config.maxAgents;
+    });
+
+    document.getElementById('speed').addEventListener('input', (e) => {
+      config.speed = parseFloat(e.target.value);
+      document.getElementById('speed-val').textContent = config.speed.toFixed(1) + 'x';
+    });
+
+    document.getElementById('spawn-threshold').addEventListener('input', (e) => {
+      config.spawnThreshold = parseFloat(e.target.value);
+      document.getElementById('spawn-val').textContent = config.spawnThreshold.toFixed(1);
+    });
+
+    // ==================== START ====================
+    init();
+  </script>
+</body>
+</html>
